@@ -83,5 +83,5 @@ test:
 production:
   <<: *default
   database: diffology_production
-  username: www-data
+  # username: www-data
   # password: <%= ENV['APP_DATABASE_PASSWORD'] %>
