@@ -1,7 +1,0 @@
-# /etc/sudoers.d/deploy
-
-# It is needed so that the `deploy` user, used by capistrano, can successfully
-# restart the enumerated services without a password input.
-
-%deploy ALL=NOPASSWD: /usr/bin/systemctl reload-or-restart nginx
-%deploy ALL=NOPASSWD: /usr/bin/systemctl reload-or-restart puma.service

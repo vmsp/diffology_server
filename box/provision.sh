@@ -13,7 +13,7 @@ EOF
 # structure.
 cat > /etc/nginx/sites-enabled/diffology.com.conf <<'EOF'
 upstream app {
-    server unix:/var/www/diffology/shared/sockets/puma.sock;
+    server unix:/var/www/diffology/shared/tmp/sockets/puma.sock;
 }
 
 server {
@@ -37,7 +37,7 @@ server {
     }
 
     location = /authorization {
-        internal;
+        # internal;
 
         proxy_pass http://app/authorization;
         proxy_pass_request_body off;
@@ -66,6 +66,7 @@ server {
 }
 EOF
 
+# TODO(vitor): Remove RAILS_MASTER_KEY
 cat > /etc/systemd/system/puma.service <<'EOF'
 [Unit]
 Description=Puma HTTP Server
@@ -75,12 +76,11 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/var/www/diffology/current
-ExecStart=/usr/local/bin/puma -C /var/www/diffology/current/config/puma.rb ../config.ru
+ExecStart=/usr/local/bin/bundle exec puma -C /var/www/diffology/current/config/puma/production.rb /var/www/diffology/current/config.ru
 Restart=always
 
 Environment=RAILS_ENV=production
 Environment=RAILS_MASTER_KEY=22abbdd3a37acabac54d655766aa3a1e
-# Environment=APP_DATABASE_PASSWORD=
 
 [Install]
 WantedBy=multi-user.target
@@ -88,7 +88,6 @@ EOF
 
 adduser deploy
 adduser deploy sudo
-adduser deploy www-data
 
 # APT
 
@@ -102,6 +101,7 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 apt-get update
 apt-get install -y \
+        acl \
         build-essential \
         fcgiwrap \
         git \
@@ -124,15 +124,16 @@ rm -f /etc/nginx/sites-enabled/default
 # Dirs
 
 mkdir -p /var/www/repos
-mkdir -p /var/www/diffology/shared
+mkdir -p /var/www/diffology
 
 chown www-data:www-data /var/www/repos
 chown deploy:deploy /var/www/diffology
-chown www-data:www-data /var/www/shared
 
 # Postgres
 
 if ! psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='www-data'"; then
+  # TODO(vitor): Check default user permissions
+  sudo -u postgres createuser -s deploy
   sudo -u postgres createuser -s www-data
   sudo -u postgres createdb -O www-data diffology_production
 fi
@@ -147,3 +148,7 @@ systemctl enable puma.service
 
 systemctl reload-or-restart nginx
 systemctl reload-or-restart puma.service
+
+# Ruby
+
+gem install bundler
