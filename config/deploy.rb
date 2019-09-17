@@ -13,7 +13,7 @@ set :deploy_to, "/var/www/diffology"
 # append :linked_files, "config/database.yml"
 
 # Default value for linked_dirs is []
-append :linked_dirs, ".bundle", "log", "tmp/pids", "tmp/cache", "tmp/sockets"
+append :linked_dirs, ".bundle", "log", "tmp/pids", "tmp/cache", "tmp/sockets", "public/plugin"
 
 # Default value for keep_releases is 5
 set :keep_releases, 3
@@ -32,23 +32,26 @@ set :bundle_jobs, 1
 set :file_permissions_paths, %w(log tmp/pids tmp/cache tmp/sockets)
 set :file_permissions_users, %w(www-data)
 
+# "setfacl: /.../...: Operation not permitted" errors are fine. The referenced
+# files were already created by www-data and are, obviously, accessible by it.
 before "deploy:updated", "deploy:set_permissions:acl"
 
-# Custom Tasks
+# SystemD
 namespace :deploy do
-  desc "Restart Puma"
-  task :restart_puma do
+  desc "Stop Puma"
+  task :stop_puma do
     on roles(:app) do
-      execute "systemctl reload-or-restart puma.service"
+      execute "sudo systemctl stop puma.service"
     end
   end
 
-  desc "Restart Nginx"
-  task :restart_puma do
+  desc "Start Puma"
+  task :start_puma do
     on roles(:app) do
-      execute "systemctl reload-or-restart nginx"
+      execute "sudo systemctl start puma.service"
     end
   end
 end
 
-# after "deploy:publishing", "deploy:restart_puma"
+before "deploy:updated", "deploy:stop_puma"
+after "deploy:finished", "deploy:start_puma"

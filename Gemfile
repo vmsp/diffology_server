@@ -24,7 +24,7 @@ gem 'bcrypt', '~> 3.1.7'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
 
-# Rack middleware for blocking & throttling abusive requests
+# Rack middleware for blocking & throttling abusive requests. Read more: https://github.com/kickstarter/rack-attack
 gem 'rack-attack'
 
 group :development, :test do

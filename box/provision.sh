@@ -2,11 +2,20 @@
 
 set -eux
 
+# These packaged need to be installed first for the directories below to exist.
+apt-get update
+apt-get install -y \
+        curl \
+        gnupg2 \
+        nginx-light
+
 # This is needed so that the `deploy` user, used by capistrano, can successfully
 # restart the enumerated services without a password input.
 cat > /etc/sudoers.d/deploy <<'EOF'
 %deploy ALL=NOPASSWD: /usr/bin/systemctl reload-or-restart nginx
 %deploy ALL=NOPASSWD: /usr/bin/systemctl reload-or-restart puma.service
+%deploy ALL=NOPASSWD: /usr/bin/systemctl stop puma.service
+%deploy ALL=NOPASSWD: /usr/bin/systemctl start puma.service
 EOF
 
 # This configuration expects the app to follow Capistrano's default directory
@@ -86,15 +95,10 @@ Environment=RAILS_MASTER_KEY=22abbdd3a37acabac54d655766aa3a1e
 WantedBy=multi-user.target
 EOF
 
-adduser deploy
+adduser deploy  # INTERACTIVE
 adduser deploy sudo
 
 # APT
-
-apt-get update
-apt-get install -y \
-        curl \
-        gnupg2
 
 curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -107,7 +111,6 @@ apt-get install -y \
         git \
         liblzma-dev \
         libpq-dev \
-        nginx-light \
         nodejs \
         patch \
         postgresql \
