@@ -9,6 +9,6 @@ class Repository
   end
 
   def save
-    system "git init --bare /var/www/repos/#{@id}.git"
+    %x(git init --bare /var/www/repos/#{@id}.git)
   end
 end
